@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced EMI Calculator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #769eec; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for better scrolling */
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background-color: #59d3f1;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        input[type="number"],
+        input[type="date"],
+        select {
+            padding: 0.75rem 1rem;
+            border: 1px solid #ebb71c; /* Light gray border */
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        input[type="number"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #3b82f6; /* Blue focus border */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); /* Blue glow */
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        button.primary {
+            background-color: #3b82f6; /* Blue */
+            color: #adc770;
+        }
+        button.primary:hover {
+            background-color: #2563eb; /* Darker blue */
+            transform: translateY(-1px);
+        }
+        button.secondary {
+            background-color: #6b7280; /* Gray */
+            color: #f1f0f0;
+        }
+        button.secondary:hover {
+            background-color: #4b5563; /* Darker gray */
+            transform: translateY(-1px);
+        }
+        button.danger {
+            background-color: #ef4444; /* Red */
+            color: #ffffff;
+        }
+        button.danger:hover {
+            background-color: #dc2626; /* Darker red */
+            transform: translateY(-1px);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #2563eb   ;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            overflow: hidden; /* Ensures rounded corners apply to table */
+        }
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb; /* Light gray border */
+        }
+        th {
+            background-color: #53a0ec; /* Lighter gray for header */
+            font-weight: 600;
+            color: #eef0f3; /* Darker text */
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .summary-box {
+            background-color: #f8b89b; /* Light blue background */
+            border: 1px solid #bfdbfe; /* Blue border */
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .summary-item label {
+            font-size: 0.875rem;
+            color: #4b5563;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+        }
+        .summary-item span {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .error-message {
+            color: #ef4444; /* Red */
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .adjustment-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            background-color: #fdfdfd;
+        }
+        .adjustment-row .remove-btn-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            height: 100%; /* Ensure button aligns with inputs */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            .summary-box {
+                grid-template-columns: 1fr;
+            }
+            th, td {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.875rem;
+            }
+            button {
+                width: 100%;
+            }
+            .adjustment-row {
+                grid-template-columns: 1fr;
+            }
+            .adjustment-row .remove-btn-container {
+                justify-content: center;
+                margin-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Advanced EMI Calculator</h1>
+
+        <!-- Loan Details Input Section -->
+        <div class="p-6 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Common Loan Details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label for="loanAmount" class="block text-sm font-medium text-gray-700 mb-1">Loan Amount (₹)</label>
+                    <input type="number" id="loanAmount" value="500000" min="1" class="w-full">
+                </div>
+                <div>
+                    <label for="annualInterestRate" class="block text-sm font-medium text-gray-700 mb-1">Annual Interest Rate (%)</label>
+                    <input type="number" id="annualInterestRate" value="8.5" min="0.01" step="0.01" class="w-full">
+                </div>
+                <div>
+                    <label for="loanStartDate" class="block text-sm font-medium text-gray-700 mb-1">Loan Start Date</label>
+                    <input type="date" id="loanStartDate" class="w-full">
+                </div>
+            </div>
+            <p id="loanInputError" class="error-message hidden"></p>
+        </div>
+
+        <!-- FIXED EMI CALCULATION SECTION -->
+        <div class="p-6 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Calculate EMI based on Fixed Tenure</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label for="loanTenureYears" class="block text-sm font-medium text-gray-700 mb-1">Loan Tenure (Years)</label>
+                    <input type="number" id="loanTenureYears" value="5" min="0" class="w-full">
+                </div>
+                <div>
+                    <label for="loanTenureMonths" class="block text-sm font-medium text-gray-700 mb-1">Loan Tenure (Months)</label>
+                    <input type="number" id="loanTenureMonths" value="0" min="0" max="11" class="w-full">
+                </div>
+            </div>
+            <button id="calculateFixedEmiBtn" class="primary w-full md:w-auto">Calculate Fixed EMI & Schedule</button>
+            <p id="fixedEmiOutput" class="mt-4 text-lg font-semibold text-gray-800 hidden">
+                Fixed EMI: <span id="fixedEmiAmount">₹ 0.00</span>
+            </p>
+            <p id="fixedEmiError" class="error-message hidden"></p>
+        </div>
+        
+        <!-- MANUAL EMI CALCULATION SECTION -->
+        <div class="p-6 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Calculate Schedule based on Manual EMI</h2>
+            <div class="mb-4">
+                <label for="initialEmiAmount" class="block text-sm font-medium text-gray-700 mb-1">Manual EMI Amount (₹)</label>
+                <input type="number" id="initialEmiAmount" value="10000" min="1" class="w-full">
+                <p id="manualEmiError" class="error-message hidden"></p>
+            </div>
+            <button id="calculateManualEmiBtn" class="primary w-full md:w-auto">Calculate Schedule</button>
+            <p id="manualEmiOutput" class="mt-4 text-lg font-semibold text-gray-800 hidden"></p>
+        </div>
+
+        <!-- Multiple EMI Adjustment Section -->
+        <div class="p-6 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Multiple EMI Adjustments (Manual EMI only)</h2>
+            <div id="emiAdjustmentsContainer">
+                <!-- Adjustment rows will be added here dynamically -->
+            </div>
+            <button id="addAdjustmentBtn" class="secondary text-sm px-4 py-2 mt-2">Add EMI Adjustment</button>
+            <p id="adjustmentError" class="error-message hidden"></p>
+        </div>
+
+        <!-- Summary Section -->
+        <div id="summarySection" class="summary-box hidden">
+            <div class="summary-item">
+                <label>Final EMI Amount</label>
+                <span id="finalEmiAmount">₹ 0.00</span>
+            </div>
+            <div class="summary-item">
+                <label>Loan Duration</label>
+                <span id="loanDuration">0 years 0 months</span>
+            </div>
+            <div class="summary-item">
+                <label>Total Interest Paid</label>
+                <span id="totalInterestPaid">₹ 0.00</span>
+            </div>
+            <div class="summary-item">
+                <label>Total Payment</label>
+                <span id="totalPayment">₹ 0.00</span>
+            </div>
+        </div>
+
+        <!-- Amortization Schedule Table -->
+        <div id="scheduleSection" class="bg-white rounded-lg shadow-md overflow-x-auto hidden">
+            <h2 class="text-xl font-semibold text-gray-700 p-6 pb-0">Amortization Schedule</h2>
+            <div class="p-6 flex justify-end gap-2">
+                <button id="downloadCsvBtn" class="secondary text-sm">Download CSV</button>
+            </div>
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50 sticky-header">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EMI No.</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EMI Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interest Paid</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Principal Paid</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining Balance</th>
+                    </tr>
+                </thead>
+                <tbody id="emiScheduleBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Schedule rows will be inserted here -->
+                </tbody>
+            </table>
+            <p id="noScheduleMessage" class="text-center text-gray-500 py-8 hidden">No schedule generated yet.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const loanAmountInput = document.getElementById('loanAmount');
+        const annualInterestRateInput = document.getElementById('annualInterestRate');
+        const loanStartDateInput = document.getElementById('loanStartDate');
+        const loanInputError = document.getElementById('loanInputError');
+        
+        // Manual EMI Elements
+        const initialEmiAmountInput = document.getElementById('initialEmiAmount');
+        const calculateManualEmiBtn = document.getElementById('calculateManualEmiBtn');
+        const manualEmiError = document.getElementById('manualEmiError');
+
+        // Fixed EMI Elements
+        const loanTenureYearsInput = document.getElementById('loanTenureYears');
+        const loanTenureMonthsInput = document.getElementById('loanTenureMonths');
+        const calculateFixedEmiBtn = document.getElementById('calculateFixedEmiBtn');
+        const fixedEmiOutput = document.getElementById('fixedEmiOutput');
+        const fixedEmiAmountSpan = document.getElementById('fixedEmiAmount');
+        const fixedEmiError = document.getElementById('fixedEmiError');
+
+        // General UI Elements
+        const emiAdjustmentsContainer = document.getElementById('emiAdjustmentsContainer');
+        const addAdjustmentBtn = document.getElementById('addAdjustmentBtn');
+        const adjustmentError = document.getElementById('adjustmentError');
+        const summarySection = document.getElementById('summarySection');
+        const finalEmiAmountSpan = document.getElementById('finalEmiAmount');
+        const loanDurationSpan = document.getElementById('loanDuration');
+        const totalInterestPaidSpan = document.getElementById('totalInterestPaid');
+        const totalPaymentSpan = document.getElementById('totalPayment');
+        const scheduleSection = document.getElementById('scheduleSection');
+        const emiScheduleBody = document.getElementById('emiScheduleBody');
+        const noScheduleMessage = document.getElementById('noScheduleMessage');
+        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+
+        // --- Global Variables ---
+        let currentSchedule = []; // Stores the full amortization schedule
+        let adjustmentCounter = 0; // To give unique IDs to adjustment rows
+
+        // --- Helper Functions ---
+
+        /**
+         * Formats a number as currency (Indian Rupees).
+         * @param {number} amount
+         * @returns {string} Formatted currency string
+         */
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        /**
+         * Adds months to a given date and returns a new Date object.
+         * Handles day overflow to ensure the date lands on the correct day of the month.
+         * @param {Date} date - The starting date.
+         * @param {number} months - The number of months to add.
+         * @returns {Date} A new Date object with months added.
+         */
+        function addMonths(date, months) {
+            const d = new Date(date);
+            const initialDay = d.getDate();
+            d.setMonth(d.getMonth() + months);
+            // If setting the month changed the day (e.g., Jan 31 + 1 month -> Mar 3 instead of Feb 28/29)
+            if (d.getDate() !== initialDay) {
+                // Set to the last day of the previous month (which is the correct end of the target month)
+                d.setDate(0);
+            }
+            return d;
+        }
+
+        /**
+         * Validates the common loan input fields.
+         * @returns {boolean} True if all inputs are valid, false otherwise.
+         */
+        function validateCommonInputs() {
+            const loanAmount = parseFloat(loanAmountInput.value);
+            const annualInterestRate = parseFloat(annualInterestRateInput.value);
+            const loanStartDate = loanStartDateInput.value;
+
+            loanInputError.classList.add('hidden');
+            manualEmiError.classList.add('hidden');
+            fixedEmiError.classList.add('hidden');
+
+            if (isNaN(loanAmount) || loanAmount <= 0) {
+                loanInputError.textContent = 'Loan Amount must be a positive number.';
+                loanInputError.classList.remove('hidden');
+                return false;
+            }
+            if (isNaN(annualInterestRate) || annualInterestRate < 0) {
+                loanInputError.textContent = 'Annual Interest Rate must be a non-negative number.';
+                loanInputError.classList.remove('hidden');
+                return false;
+            }
+            if (!loanStartDate) {
+                loanInputError.textContent = 'Loan Start Date is required.';
+                loanInputError.classList.remove('hidden');
+                return false;
+            }
+            return true;
+        }
+
+        /**
+         * Validates all EMI adjustment input fields.
+         * @returns {boolean} True if all adjustment inputs are valid, false otherwise.
+         */
+        function validateAdjustmentInputs() {
+            adjustmentError.classList.add('hidden');
+            const adjustmentRows = emiAdjustmentsContainer.querySelectorAll('.adjustment-row');
+
+            for (const row of adjustmentRows) {
+                const newEmiAmountInput = row.querySelector('.new-emi-amount');
+                const adjustmentTypeSelect = row.querySelector('.adjustment-type');
+                const adjustmentDateInput = row.querySelector('.adjustment-date');
+                const adjustmentEmiNumberInput = row.querySelector('.adjustment-emi-number');
+
+                const newEmiAmount = parseFloat(newEmiAmountInput.value);
+                if (isNaN(newEmiAmount) || newEmiAmount <= 0) {
+                    adjustmentError.textContent = 'All new EMI amounts must be positive numbers.';
+                    adjustmentError.classList.remove('hidden');
+                    return false;
+                }
+
+                if (adjustmentTypeSelect.value === 'date') {
+                    if (!adjustmentDateInput.value) {
+                        adjustmentError.textContent = 'All adjustment dates are required.';
+                        adjustmentError.classList.remove('hidden');
+                        return false;
+                    }
+                } else { // emiNumber
+                    const adjustmentEmiNumber = parseInt(adjustmentEmiNumberInput.value);
+                    if (isNaN(adjustmentEmiNumber) || adjustmentEmiNumber < 1) {
+                        adjustmentError.textContent = 'All "After N EMIs" values must be positive integers.';
+                        adjustmentError.classList.remove('hidden');
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        // --- Core Calculation Logic ---
+
+        /**
+         * Calculates the fixed EMI amount for a loan with a given tenure.
+         * Formula: P * r * (1 + r)^n / ((1 + r)^n - 1)
+         * @param {number} principal - Loan amount.
+         * @param {number} annualRate - Annual interest rate (%).
+         * @param {number} tenureMonths - Total number of months for the loan.
+         * @returns {number} The calculated fixed EMI amount.
+         */
+        function calculateFixedEmi(principal, annualRate, tenureMonths) {
+            const monthlyRate = annualRate / 100 / 12;
+
+            if (monthlyRate === 0) {
+                return principal / tenureMonths; // Simple division if interest is 0
+            }
+
+            const power = Math.pow(1 + monthlyRate, tenureMonths);
+            return principal * monthlyRate * power / (power - 1);
+        }
+
+        /**
+         * Generates a segment of the amortization schedule based on current loan state.
+         * @param {number} currentBalance - The principal balance at the start of this segment.
+         * @param {number} annualInterestRate - The annual interest rate in percentage.
+         * @param {number} emiAmount - The fixed EMI amount for this segment.
+         * @param {Date} segmentStartDate - The start date for this segment of the schedule.
+         * @param {number} startEmiNo - The starting EMI number for this segment.
+         * @returns {Array<Object>} An array of objects, each representing an EMI payment for this segment.
+         */
+        function generateAmortizationSegment(currentBalance, annualInterestRate, emiAmount, segmentStartDate, startEmiNo) {
+            const monthlyInterestRate = annualInterestRate / 100 / 12;
+            let remainingBalance = currentBalance;
+            let segmentSchedule = [];
+            let emiCount = startEmiNo;
+
+            // Check for very low EMI
+            if (emiAmount <= (remainingBalance * monthlyInterestRate) && remainingBalance > 0) {
+                for (let i = 0; i < 12; i++) { // Show 12 months of insufficient payment
+                    if (remainingBalance <= 0) break;
+                    emiCount++;
+                    const emiDate = addMonths(segmentStartDate, emiCount - startEmiNo);
+                    const interestPaid = remainingBalance * monthlyInterestRate;
+                    const principalPaid = emiAmount - interestPaid;
+                    remainingBalance -= principalPaid;
+                    segmentSchedule.push({
+                        emiNo: emiCount,
+                        date: emiDate.toISOString().split('T')[0],
+                        emiAmount: parseFloat(emiAmount.toFixed(2)),
+                        interestPaid: parseFloat(interestPaid.toFixed(2)),
+                        principalPaid: parseFloat(principalPaid.toFixed(2)),
+                        remainingBalance: parseFloat(Math.max(0, remainingBalance).toFixed(2))
+                    });
+                }
+                segmentSchedule.push({
+                    emiNo: '...',
+                    date: 'Loan may not finish with this EMI',
+                    emiAmount: 0,
+                    interestPaid: 0,
+                    principalPaid: 0,
+                    remainingBalance: parseFloat(Math.max(0, remainingBalance).toFixed(2))
+                });
+                return segmentSchedule;
+            }
+
+            while (remainingBalance > 0 && emiCount < 1200) { // Max 100 years to prevent infinite loops
+                emiCount++;
+                const emiDate = addMonths(segmentStartDate, emiCount - startEmiNo);
+
+                const interestPaidThisMonth = remainingBalance * monthlyInterestRate;
+                let principalPaidThisMonth = emiAmount - interestPaidThisMonth;
+
+                // Adjust last EMI
+                if (remainingBalance < principalPaidThisMonth) {
+                    principalPaidThisMonth = remainingBalance;
+                    emiAmount = principalPaidThisMonth + interestPaidThisMonth;
+                }
+
+                remainingBalance -= principalPaidThisMonth;
+
+                segmentSchedule.push({
+                    emiNo: emiCount,
+                    date: emiDate.toISOString().split('T')[0],
+                    emiAmount: parseFloat(emiAmount.toFixed(2)),
+                    interestPaid: parseFloat(interestPaidThisMonth.toFixed(2)),
+                    principalPaid: parseFloat(principalPaidThisMonth.toFixed(2)),
+                    remainingBalance: parseFloat(Math.max(0, remainingBalance).toFixed(2))
+                });
+            }
+            return segmentSchedule;
+        }
+
+        /**
+         * Orchestrates the full amortization schedule generation, including multiple EMI adjustments.
+         * This function is used for the Manual EMI calculation path.
+         * @returns {Array<Object>} The complete amortization schedule.
+         */
+        function generateManualEmiSchedule() {
+            const loanAmount = parseFloat(loanAmountInput.value);
+            const annualInterestRate = parseFloat(annualInterestRateInput.value);
+            const initialEmiAmount = parseFloat(initialEmiAmountInput.value);
+            const loanStartDate = new Date(loanStartDateInput.value);
+
+            let fullSchedule = [];
+            let currentBalance = loanAmount;
+            let currentEmi = initialEmiAmount;
+            let currentStartDate = loanStartDate;
+            let currentEmiNo = 0;
+
+            const adjustmentRules = getAdjustmentRules();
+            adjustmentRules.sort((a, b) => {
+                if (a.type === 'date' && b.type === 'date') return new Date(a.value) - new Date(b.value);
+                if (a.type === 'emiNumber' && b.type === 'emiNumber') return a.value - b.value;
+                return 0;
+            });
+
+            for (let i = 0; i <= adjustmentRules.length; i++) {
+                let segmentEndDate = null;
+                let segmentEndEmiNo = Infinity;
+
+                if (i < adjustmentRules.length) {
+                    const rule = adjustmentRules[i];
+                    if (rule.type === 'date') {
+                        segmentEndDate = new Date(rule.value);
+                    } else {
+                        segmentEndEmiNo = rule.value;
+                    }
+                }
+
+                const segment = generateAmortizationSegment(currentBalance, annualInterestRate, currentEmi, currentStartDate, currentEmiNo);
+
+                let cutOffIndex = segment.length;
+                if (segmentEndDate) {
+                    cutOffIndex = segment.findIndex(item => new Date(item.date) >= segmentEndDate);
+                    if (cutOffIndex === -1) cutOffIndex = segment.length;
+                } else if (segmentEndEmiNo !== Infinity) {
+                    cutOffIndex = segment.findIndex(item => item.emiNo > segmentEndEmiNo);
+                    if (cutOffIndex === -1) cutOffIndex = segment.length;
+                }
+
+                fullSchedule = fullSchedule.concat(segment.slice(0, cutOffIndex));
+
+                if (i === adjustmentRules.length || currentBalance <= 0 || segment[segment.length - 1]?.emiNo === '...') {
+                    break;
+                }
+
+                const lastItemInSegment = fullSchedule[fullSchedule.length - 1];
+                if (lastItemInSegment) {
+                    currentBalance = lastItemInSegment.remainingBalance;
+                    currentStartDate = addMonths(new Date(lastItemInSegment.date), 1);
+                    currentEmiNo = lastItemInSegment.emiNo;
+                    currentEmi = adjustmentRules[i].newEmi;
+                } else {
+                    break;
+                }
+            }
+            return fullSchedule;
+        }
+
+        /**
+         * Renders the amortization schedule table and updates summary.
+         * @param {Array<Object>} schedule - The amortization schedule array.
+         */
+        function renderSchedule(schedule) {
+            emiScheduleBody.innerHTML = '';
+            currentSchedule = schedule;
+
+            if (schedule.length === 0 || (schedule.length === 1 && schedule[0].emiNo === '...')) {
+                noScheduleMessage.classList.remove('hidden');
+                summarySection.classList.add('hidden');
+                scheduleSection.classList.add('hidden');
+                return;
+            } else {
+                noScheduleMessage.classList.add('hidden');
+                summarySection.classList.remove('hidden');
+                scheduleSection.classList.remove('hidden');
+            }
+
+            let totalInterest = 0;
+            let totalPayment = 0;
+            let actualEmiCount = 0;
+
+            schedule.forEach(item => {
+                if (item.emiNo !== '...') {
+                    totalInterest += item.interestPaid;
+                    totalPayment += item.emiAmount;
+                    actualEmiCount++;
+                }
+
+                const row = emiScheduleBody.insertRow();
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.emiNo}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(item.emiAmount)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(item.interestPaid)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(item.principalPaid)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(item.remainingBalance)}</td>
+                `;
+            });
+
+            // Update summary
+            const finalEmi = schedule[schedule.length - 1].emiNo === '...' ? schedule[0].emiAmount : schedule[schedule.length - 1].emiAmount;
+            finalEmiAmountSpan.textContent = formatCurrency(finalEmi);
+            const years = Math.floor(actualEmiCount / 12);
+            const months = actualEmiCount % 12;
+            loanDurationSpan.textContent = `${years} years ${months} months`;
+            totalInterestPaidSpan.textContent = formatCurrency(totalInterest);
+            totalPaymentSpan.textContent = formatCurrency(totalPayment);
+        }
+
+        // --- EMI Adjustment UI and Logic ---
+
+        /**
+         * Adds a new EMI adjustment input row to the UI.
+         */
+        function addAdjustmentRow() {
+            adjustmentCounter++;
+            const rowId = `adjustment-row-${adjustmentCounter}`;
+            const adjustmentRowDiv = document.createElement('div');
+            adjustmentRowDiv.className = 'adjustment-row';
+            adjustmentRowDiv.id = rowId;
+            adjustmentRowDiv.innerHTML = `
+                <div>
+                    <label for="adjustmentType-${adjustmentCounter}" class="block text-sm font-medium text-gray-700 mb-1">Adjust From</label>
+                    <select id="adjustmentType-${adjustmentCounter}" class="w-full adjustment-type">
+                        <option value="date">Specific Date</option>
+                        <option value="emiNumber">After N EMIs</option>
+                    </select>
+                </div>
+                <div class="adjustment-date-container">
+                    <label for="adjustmentDate-${adjustmentCounter}" class="block text-sm font-medium text-gray-700 mb-1">Effective Date</label>
+                    <input type="date" id="adjustmentDate-${adjustmentCounter}" class="w-full adjustment-date">
+                </div>
+                <div class="adjustment-emi-number-container hidden">
+                    <label for="adjustmentEmiNumber-${adjustmentCounter}" class="block text-sm font-medium text-gray-700 mb-1">After N EMIs</label>
+                    <input type="number" id="adjustmentEmiNumber-${adjustmentCounter}" min="1" class="w-full adjustment-emi-number">
+                </div>
+                <div>
+                    <label for="newEmiAmount-${adjustmentCounter}" class="block text-sm font-medium text-gray-700 mb-1">New EMI Amount (₹)</label>
+                    <input type="number" id="newEmiAmount-${adjustmentCounter}" min="1" class="w-full new-emi-amount">
+                </div>
+                <div class="remove-btn-container">
+                    <button type="button" class="danger text-sm px-3 py-2 remove-adjustment-btn" data-row-id="${rowId}">Remove</button>
+                </div>
+            `;
+            emiAdjustmentsContainer.appendChild(adjustmentRowDiv);
+
+            // Set default date for new row
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            adjustmentRowDiv.querySelector(`.adjustment-date`).value = `${yyyy}-${mm}-${dd}`;
+
+            // Add event listeners for the new row
+            const newAdjustmentTypeSelect = adjustmentRowDiv.querySelector(`.adjustment-type`);
+            newAdjustmentTypeSelect.addEventListener('change', (event) => {
+                const parentRow = event.target.closest('.adjustment-row');
+                const dateContainer = parentRow.querySelector('.adjustment-date-container');
+                const emiNumberContainer = parentRow.querySelector('.adjustment-emi-number-container');
+                if (event.target.value === 'date') {
+                    dateContainer.classList.remove('hidden');
+                    emiNumberContainer.classList.add('hidden');
+                } else {
+                    dateContainer.classList.add('hidden');
+                    emiNumberContainer.classList.remove('hidden');
+                }
+            });
+
+            const removeBtn = adjustmentRowDiv.querySelector('.remove-adjustment-btn');
+            removeBtn.addEventListener('click', (event) => {
+                const rowToRemove = document.getElementById(event.target.dataset.rowId);
+                if (rowToRemove) {
+                    rowToRemove.remove();
+                }
+            });
+        }
+
+        /**
+         * Gathers all adjustment rules from the UI.
+         * @returns {Array<Object>} An array of adjustment rule objects.
+         */
+        function getAdjustmentRules() {
+            const rules = [];
+            emiAdjustmentsContainer.querySelectorAll('.adjustment-row').forEach(row => {
+                const adjustmentType = row.querySelector('.adjustment-type').value;
+                const newEmiAmount = parseFloat(row.querySelector('.new-emi-amount').value);
+                if (adjustmentType === 'date') {
+                    const adjustmentDate = row.querySelector('.adjustment-date').value;
+                    if (adjustmentDate && !isNaN(newEmiAmount) && newEmiAmount > 0) {
+                        rules.push({ type: 'date', value: adjustmentDate, newEmi: newEmiAmount });
+                    }
+                } else { // emiNumber
+                    const adjustmentEmiNumber = parseInt(row.querySelector('.adjustment-emi-number').value);
+                    if (!isNaN(adjustmentEmiNumber) && adjustmentEmiNumber >= 1 && !isNaN(newEmiAmount) && newEmiAmount > 0) {
+                        rules.push({ type: 'emiNumber', value: adjustmentEmiNumber, newEmi: newEmiAmount });
+                    }
+                }
+            });
+            return rules;
+        }
+
+        // --- Event Handlers ---
+
+        /**
+         * Handles the calculation for the Fixed EMI mode.
+         */
+        function handleCalculateFixedEmi() {
+            if (!validateCommonInputs()) {
+                return;
+            }
+
+            const loanAmount = parseFloat(loanAmountInput.value);
+            const annualInterestRate = parseFloat(annualInterestRateInput.value);
+            const loanStartDate = new Date(loanStartDateInput.value);
+            const tenureYears = parseInt(loanTenureYearsInput.value) || 0;
+            const tenureMonths = parseInt(loanTenureMonthsInput.value) || 0;
+            const totalTenureMonths = (tenureYears * 12) + tenureMonths;
+
+            if (totalTenureMonths <= 0) {
+                fixedEmiError.textContent = 'Loan Tenure must be greater than 0.';
+                fixedEmiError.classList.remove('hidden');
+                return;
+            }
+
+            // Hide manual EMI adjustments when using fixed EMI calculation
+            emiAdjustmentsContainer.innerHTML = '';
+            fixedEmiOutput.classList.remove('hidden');
+            manualEmiError.classList.add('hidden');
+            
+            const fixedEmi = calculateFixedEmi(loanAmount, annualInterestRate, totalTenureMonths);
+            fixedEmiAmountSpan.textContent = formatCurrency(fixedEmi);
+
+            // Now generate the full schedule with the calculated fixed EMI
+            const schedule = generateAmortizationSegment(loanAmount, annualInterestRate, fixedEmi, loanStartDate, 0);
+            renderSchedule(schedule);
+        }
+
+        /**
+         * Handles the calculation for the Manual EMI mode.
+         */
+        function handleCalculateManualEmi() {
+            if (!validateCommonInputs() || !validateAdjustmentInputs()) {
+                return;
+            }
+
+            const initialEmiAmount = parseFloat(initialEmiAmountInput.value);
+            if (isNaN(initialEmiAmount) || initialEmiAmount <= 0) {
+                manualEmiError.textContent = 'Initial EMI Amount must be a positive number.';
+                manualEmiError.classList.remove('hidden');
+                return;
+            }
+            fixedEmiOutput.classList.add('hidden');
+
+            const schedule = generateManualEmiSchedule();
+            renderSchedule(schedule);
+        }
+
+
+        /**
+         * Downloads the current schedule as a CSV file.
+         */
+        function downloadCsv() {
+            if (currentSchedule.length === 0 || (currentSchedule.length === 1 && currentSchedule[0].emiNo === '...')) {
+                // Using a custom message box instead of alert()
+                const messageBox = document.createElement('div');
+                messageBox.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background-color: #fff; padding: 2rem; border-radius: 0.75rem;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000;
+                    text-align: center; font-family: 'Inter', sans-serif;
+                `;
+                messageBox.innerHTML = `
+                    <p class="text-lg font-semibold mb-4">No schedule to download!</p>
+                    <button class="primary px-4 py-2" onclick="this.parentNode.remove()">OK</button>
+                `;
+                document.body.appendChild(messageBox);
+                return;
+            }
+
+            let csvContent = "EMI No.,Date,EMI Amount,Interest Paid,Principal Paid,Remaining Balance\n";
+            currentSchedule.forEach(row => {
+                csvContent += `${row.emiNo},${row.date},${row.emiAmount},${row.interestPaid},${row.principalPaid},${row.remainingBalance}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'emi_schedule.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                const messageBox = document.createElement('div');
+                messageBox.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background-color: #fff; padding: 2rem; border-radius: 0.75rem;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000;
+                    text-align: center; font-family: 'Inter', sans-serif;
+                `;
+                messageBox.innerHTML = `
+                    <p class="text-lg font-semibold mb-4">Your browser does not support automatic CSV download. Please copy the content below:</p>
+                    <textarea class="w-full h-32 border border-gray-300 rounded-md p-2 text-sm mb-4" readonly>${csvContent}</textarea>
+                    <button class="primary px-4 py-2" onclick="this.parentNode.remove()">Close</button>
+                `;
+                document.body.appendChild(messageBox);
+            }
+        }
+
+        // --- Initial Setup and Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            loanStartDateInput.value = `${yyyy}-${mm}-${dd}`;
+
+            calculateManualEmiBtn.addEventListener('click', handleCalculateManualEmi);
+            calculateFixedEmiBtn.addEventListener('click', handleCalculateFixedEmi);
+            addAdjustmentBtn.addEventListener('click', addAdjustmentRow);
+            downloadCsvBtn.addEventListener('click', downloadCsv);
+
+            // Add one initial adjustment row by default for demonstration
+            addAdjustmentRow();
+        });
+    </script>
+</body>
+</html>
